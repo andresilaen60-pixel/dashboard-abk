@@ -74,7 +74,7 @@ if df is not None:
         st.write("---")
         
         # Pilihan Menu
-        menu_pilihan = st.radio("SISTEM NAVIGASI", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"])
+        menu_pilihan = st.radio("SISTEM NAVIGASI", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan", "Peta Maps Sumut"])
         
         # Logika Reset: Jika user pindah menu utama, kembalikan tampilan sub-menu ke awal
         if 'last_menu' not in st.session_state:
@@ -229,6 +229,7 @@ if df is not None:
                         else:
                             st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)")
     
+
 
 
 
