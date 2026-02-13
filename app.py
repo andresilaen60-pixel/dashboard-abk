@@ -186,10 +186,9 @@ if df is not None:
             "Kab. Deli Serdang": [3.42, 98.70], "Kab. Karo": [3.11, 98.26]
         }
 
-        int( kab, loc in kab_coords.items():
-            df_k = df[df['Kabupaten'] == kab]
-            kurang = df_k['Kurang Guru'].sum()
-            lebih = df_k.apply(lambda r: max(0, r['Jml Guru'] - r['ABK']), axis=1).sum()
+           for kab, loc in kab_coords.items():
+               df_k = df[df['Kabupaten'] == kab]
+               jml_kurang = int(df_k['Kurang Guru'].sum())
             
             if st.session_state.map_filter == "Kurang" and kurang > 0:
                 folium.CircleMarker(loc, radius=10, color='red', fill=True, popup=f"{kab}: {kurang} Kurang").addTo(m)
@@ -230,6 +229,7 @@ if df is not None:
                         else:
                             st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)"))
     
+
 
 
 
