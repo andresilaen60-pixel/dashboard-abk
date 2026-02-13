@@ -156,7 +156,6 @@ if df is not None:
 
     # D. PETA MAPS SUMUT
     elif menu_pilihan == "Peta Maps Sumut":
-        import folium
         from streamlit_folium import st_folium
         st.header("Peta Sebaran Guru Sumut")
         
@@ -231,6 +230,7 @@ if df is not None:
                         else:
                             st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)"))
     
+
 
 
 
