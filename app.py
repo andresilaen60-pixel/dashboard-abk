@@ -157,7 +157,6 @@ if df is not None:
         import folium
         from streamlit_folium import st_folium
         st.header("Peta Sebaran Guru Sumut")
-         st.header("🗺️ Pemetaan Geografis ABK Sumut")
         
         # 1. Munculkan Peta Dasar
         import folium
@@ -230,6 +229,7 @@ if df is not None:
                         else:
                             st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)")
     
+
 
 
 
