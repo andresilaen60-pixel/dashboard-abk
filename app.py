@@ -72,32 +72,12 @@ def load_and_fix_data():
 df = load_and_fix_data()
 
 if df is not None:
-    # --- 1. INISIALISASI STATE (WAJIB ADA AGAR TIDAK ERROR) ---
-    if 'sub_view' not in st.session_state:
-        st.session_state.sub_view = 'LIST_KAB'
-    if 'main_nav_state' not in st.session_state:
-        st.session_state.main_nav_state = "Data Provinsi"
-
-    # --- 2. SIDEBAR MENU ---
+    # --- 4. SIDEBAR ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
         st.title("E-ABK SUMUT")
-        st.write("---")
+        menu = st.radio("NAVIGASI UTAMA", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"], key="main_nav")
         
-        # Radio button untuk navigasi utama
-        menu_pilihan = st.radio("SISTEM NAVIGASI", 
-                                ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"],
-                                key="main_nav")
-        
-        # LOGIKA RESET: Jika klik menu sidebar, kembalikan ke tampilan awal list kabupaten
-        if menu_pilihan != st.session_state.main_nav_state:
-            st.session_state.main_nav_state = menu_pilihan
-            st.session_state.sub_view = 'LIST_KAB'
-            st.rerun()
-            
-        st.write("---")
-        st.caption("Bidang Pembinaan Ketenagaan\nDisdik Sumatera Utara")
-
     # --- 5. DATA KABUPATEN KOTA ---
     if menu == "Data Kabupaten Kota":
         if 'sub_view' not in st.session_state: st.session_state.sub_view = 'KAB'
@@ -204,4 +184,5 @@ if df is not None:
             df_all = df_all[mask]
 
         st.dataframe(df_all, use_container_width=True, hide_index=True)
+
 
