@@ -71,7 +71,6 @@ def load_and_fix_data():
 
 df = load_and_fix_data()
 
-if df is not None:
     # --- 4. SIDEBAR ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
@@ -184,5 +183,6 @@ if df is not None:
             df_all = df_all[mask]
 
         st.dataframe(df_all, use_container_width=True, hide_index=True)
+
 
 
