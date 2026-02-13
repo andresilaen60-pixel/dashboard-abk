@@ -153,10 +153,11 @@ if df is not None:
         st.dataframe(df_all, use_container_width=True, hide_index=True)
 
     # D. PETA MAPS SUMUT
-   elif menu_pilihan == "Peta Maps Sumut":
-import folium
-from streamlit_folium import st_folium
-st.header("Peta Sebaran Guru Sumut")
+    elif menu_pilihan == "Peta Maps Sumut":
+        import folium
+        from streamlit_folium import st_folium
+        st.header("Peta Sebaran Guru Sumut")
     
+
 
 
