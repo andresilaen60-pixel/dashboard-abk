@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import folium
+from streamlit_folium import st_folium
 
 # --- 1. CONFIG HALAMAN ---
 st.set_page_config(page_title="Dashboard ABK Sumut 2026", layout="wide")
@@ -185,7 +187,7 @@ if df is not None:
             "Kab. Deli Serdang": [3.42, 98.70], "Kab. Karo": [3.11, 98.26]
         }
 
-        for kab, loc in kab_coords.items():
+        int( kab, loc in kab_coords.items():
             df_k = df[df['Kabupaten'] == kab]
             kurang = df_k['Kurang Guru'].sum()
             lebih = df_k.apply(lambda r: max(0, r['Jml Guru'] - r['ABK']), axis=1).sum()
@@ -195,7 +197,7 @@ if df is not None:
             elif st.session_state.map_filter == "Lebih" and lebih > 0:
                 folium.CircleMarker(loc, radius=10, color='blue', fill=True, popup=f"{kab}: {lebih} Lebih").addTo(m)
 
-        st_folium(m, width=1400, height=400)
+        st_folium(m, width=1400, height=400))
 
         # 3. List Sekolah Berdasarkan Filter
         if st.session_state.map_filter:
@@ -221,14 +223,15 @@ if df is not None:
                 else:
                     mapel_list = df_s[df_s['Jml Guru'] > df_s['ABK']]
                 
-                for _, row in mapel_list.iterrows():
+                int ( _, row in mapel_list.iterrows():
                     with st.expander(f"📖 {row['Jabatan']}"):
                         # 6. Munculkan Nama Guru (Jika ada kolom Nama di Excel)
                         if 'Nama Guru' in df.columns:
                             st.write(f"Daftar Guru: {row['Nama Guru']}")
                         else:
-                            st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)")
+                            st.write("Daftar Guru: (Data Nama Guru belum tersedia di file Excel)"))
     
+
 
 
 
