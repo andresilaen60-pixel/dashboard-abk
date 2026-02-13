@@ -72,11 +72,28 @@ def load_and_fix_data():
 df = load_and_fix_data()
 
 if df is not None:
-    # --- 4. SIDEBAR ---
+    # --- 4. SIDEBAR MENU (LOGIKA RESET OTOMATIS) ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
         st.title("E-ABK SUMUT")
-        menu = st.radio("NAVIGASI UTAMA", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"], key="main_nav")
+        st.write("---")
+        
+        # Simpan menu lama sebelum user memilih yang baru
+        old_menu = st.session_state.get('main_nav', "Data Provinsi")
+        
+        menu_pilihan = st.radio("SISTEM NAVIGASI", 
+                                ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"],
+                                key="main_nav")
+        
+        # LOGIKA SAKTI: Jika menu utama berubah, reset semua sub-view ke awal
+        if menu_pilihan != old_menu:
+            st.session_state.sub_view = 'LIST_KAB'
+            st.session_state.sel_kab = None
+            st.session_state.sel_sch = None
+            st.rerun()
+            
+        st.write("---")
+        st.caption("Bidang Pembinaan Ketenagaan\nDisdik Sumatera Utara")
 
     # --- 5. DATA KABUPATEN KOTA ---
     if menu == "Data Kabupaten Kota":
@@ -182,4 +199,5 @@ if df is not None:
         if search_all:
             mask = df_all.apply(lambda x: x.astype(str).str.contains(search_all, case=False)).any(axis=1)
             df_all = df_all[mask]
+
         st.dataframe(df_all, use_container_width=True, hide_index=True)
