@@ -121,6 +121,27 @@ if df is not None:
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
+            
+            # --- BAGIAN TOMBOL GRAFIK YANG DIKEMBALIKAN ---
+            if st.button("📊 Tampilkan Grafik Analisis Kab/Kota"):
+                if 'show_chart_kab' not in st.session_state: st.session_state.show_chart_kab = False
+                st.session_state.show_chart_kab = not st.session_state.show_chart_kab
+            
+            if st.session_state.get('show_chart_kab', False):
+                # Menghitung data untuk grafik
+                df_chart = df.groupby('Kabupaten').agg({
+                    'Jml Guru': 'sum',
+                    'Kurang Guru': 'sum'
+                }).reset_index()
+                
+                # Menampilkan Grafik
+                st.bar_chart(
+                    df_chart.set_index('Kabupaten')[['Jml Guru', 'Kurang Guru']],
+                    color=["#0000FF", "#FF0000"] # Biru untuk Guru, Merah untuk Kurang
+                )
+            # ----------------------------------------------
+            
+            st.write("---")
             search_k = st.text_input("🔍 Cari Kabupaten...")
             kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
             if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
@@ -200,3 +221,4 @@ if df is not None:
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
