@@ -20,18 +20,11 @@ st.markdown("""
     }
     div.stButton > button:hover { background: #0056b3 !important; }
     
-    /* GAYA TABEL HTML & TOOLTIP */
     .custom-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; color: black; margin-top: 10px; }
     .custom-table th { background: #012d5e; color: white; padding: 12px; text-align: left; }
     .custom-table td { padding: 10px; border-bottom: 1px solid #ddd; position: relative; }
     .bg-kurang { background-color: rgba(255, 0, 0, 0.1) !important; }
     .bg-lebih { background-color: rgba(0, 0, 255, 0.1) !important; }
-    .tooltiptext {
-        visibility: hidden; width: 280px; background-color: #333; color: #fff; text-align: center;
-        border-radius: 6px; padding: 10px; position: absolute; z-index: 100;
-        bottom: 125%; left: 50%; margin-left: -140px; opacity: 0; transition: opacity 0.3s;
-    }
-    .custom-table td:hover .tooltiptext { visibility: visible; opacity: 1; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -58,13 +51,11 @@ def load_and_fix_data():
         st.error(f"Eror Memuat Data: {e}")
         return None
 
-# --- 4. INISIALISASI SESSION STATE (AGAR TIDAK ERROR) ---
-if 'sub_view' not in st.session_state:
-    st.session_state.sub_view = 'LIST_KAB'
-if 'sel_kab' not in st.session_state:
-    st.session_state.sel_kab = None
-if 'sel_sch' not in st.session_state:
-    st.session_state.sel_sch = None
+# --- 4. INISIALISASI SESSION STATE ---
+if 'sub_view' not in st.session_state: st.session_state.sub_view = 'LIST_KAB'
+if 'sel_kab' not in st.session_state: st.session_state.sel_kab = None
+if 'sel_sch' not in st.session_state: st.session_state.sel_sch = None
+if 'map_filter' not in st.session_state: st.session_state.map_filter = None
 
 df = load_and_fix_data()
 
@@ -74,22 +65,17 @@ if df is not None:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
         st.title("E-ABK SUMUT")
         st.write("---")
+        menu_pilihan = st.radio("SISTEM NAVIGASI", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan", "Peta Maps Sumut"])
         
-        # Pilihan Menu
-        menu_pilihan = st.radio("SISTEM NAVIGASI", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan"])
-        
-        # Logika Reset: Jika user pindah menu utama, kembalikan tampilan sub-menu ke awal
         if 'last_menu' not in st.session_state:
             st.session_state.last_menu = menu_pilihan
-        
         if menu_pilihan != st.session_state.last_menu:
             st.session_state.last_menu = menu_pilihan
             st.session_state.sub_view = 'LIST_KAB'
+            st.session_state.map_filter = None
             st.rerun()
 
     # --- 6. TAMPILAN BERDASARKAN MENU ---
-
-    # A. DATA PROVINSI
     if menu_pilihan == "Data Provinsi":
         st.header("🏢 Rekapitulasi Guru Provinsi")
         c1, c2, c3 = st.columns(3)
@@ -99,15 +85,12 @@ if df is not None:
         st.write("---")
         st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
 
-    # B. DATA KABUPATEN KOTA
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
             search_k = st.text_input("🔍 Cari Kabupaten...")
             kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
             if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
-            
-            h1, h2, h3 = st.columns([2, 1, 1]); h1.write("**Kabupaten**"); h2.write("**Guru**"); h3.write("**Kepala Sekolah**")
             for k in kabs:
                 df_k = df[df['Kabupaten'] == k]
                 c1, c2, c3 = st.columns([2, 1, 1])
@@ -119,32 +102,23 @@ if df is not None:
         elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
             if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_KAB'; st.rerun()
-            search_s = st.text_input("🔍 Cari Sekolah...")
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab]
-            sch_list = df_kab.groupby('Nama Sekolah').apply(lambda x: pd.Series({'Kurang': x['Kurang Guru'].sum(), 'Lebih': x.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum()})).reset_index()
-            if search_s: sch_list = sch_list[sch_list['Nama Sekolah'].str.contains(search_s, case=False)]
-            
-            for _, row in sch_list.iterrows():
-                c1, c2, c3 = st.columns([2, 1, 1])
-                if c1.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
-                    st.session_state.sel_sch = row['Nama Sekolah']; st.session_state.sub_view = 'DETAIL'; st.rerun()
-                c2.write(f"🔴 {int(row['Kurang'])}"); c3.write(f"🔵 {int(row['Lebih'])}")
+            sch_list = df_kab['Nama Sekolah'].unique()
+            for s in sch_list:
+                if st.button(s, key=f"sk_{s}"):
+                    st.session_state.sel_sch = s; st.session_state.sub_view = 'DETAIL'; st.rerun()
 
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
             if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
             df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
             df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
-            
-            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th><th>Keterangan</th></tr>"
+            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th></tr>"
             for _, row in df_res.iterrows():
-                s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
                 cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
-                msg = f"Posisi {row['Jabatan']} tersedia" if row['Selisih'] < 0 else f"Kuota {row['Jabatan']} penuh"
-                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{s_val}</td><td>{row['Keterangan']}<span class='tooltiptext'>{msg}</span></td></tr>"
+                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{int(row['Selisih'])}</td></tr>"
             st.markdown(html + "</table>", unsafe_allow_html=True)
 
-    # C. DATA KESELURUHAN
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
         search_all = st.text_input("🔍 Cari data...")
@@ -154,4 +128,46 @@ if df is not None:
             df_all = df_all[mask]
         st.dataframe(df_all, use_container_width=True, hide_index=True)
 
-    
+    # --- MENU KE-4: PETA MAPS ---
+    elif menu_pilihan == "Peta Maps Sumut":
+        st.header("🗺️ Sebaran Geografis Guru")
+        
+        # Judul Kolom Tombol
+        col1, col2, _ = st.columns([1, 1, 2])
+        with col1:
+            st.markdown("### **Guru Kurang**")
+            if st.button("🔴 Tampilkan Merah"): st.session_state.map_filter = "Kurang"
+        with col2:
+            st.markdown("### **Guru Lebih**")
+            if st.button("🔵 Tampilkan Biru"): st.session_state.map_filter = "Lebih"
+
+        m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
+        kab_coords = {
+            "Kab. Asahan": [2.98, 99.61], "Kota Medan": [3.59, 98.67], "Kab. Dairi": [2.74, 98.31],
+            "Kab. Deli Serdang": [3.42, 98.70], "Kab. Karo": [3.11, 98.26], "Kab. Simalungun": [2.90, 99.05]
+        }
+
+        for kab, loc in kab_coords.items():
+            df_k = df[df['Kabupaten'] == kab]
+            if st.session_state.map_filter == "Kurang":
+                val = int(df_k['Kurang Guru'].sum())
+                if val > 0: folium.CircleMarker(loc, radius=12, color='red', fill=True, popup=f"{kab}: {val} Kurang").addTo(m)
+            elif st.session_state.map_filter == "Lebih":
+                val = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
+                if val > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {val} Lebih").addTo(m)
+
+        st_folium(m, width=None, height=450)
+
+        if st.session_state.map_filter:
+            st.write("---")
+            st.markdown("### **Sekolah**")
+            list_s = sorted(df[df['Kurang Guru'] > 0]['Nama Sekolah'].unique()) if st.session_state.map_filter == "Kurang" else sorted(df[df['Jml Guru'] > df['ABK']]['Nama Sekolah'].unique())
+            sel_s = st.selectbox("Pilih Sekolah:", ["-- Pilih Sekolah --"] + list(list_s))
+            if sel_s != "-- Pilih Sekolah --":
+                st.info(f"🏢 **Detail: {sel_s}**")
+                df_s = df[df['Nama Sekolah'] == sel_s]
+                target = df_s[df_s['Kurang Guru'] > 0] if st.session_state.map_filter == "Kurang" else df_s[df_s['Jml Guru'] > df_s['ABK']]
+                for _, row in target.iterrows():
+                    with st.expander(f"📖 {row['Jabatan']}"):
+                        st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
+                        
