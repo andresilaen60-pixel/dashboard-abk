@@ -73,20 +73,37 @@ if 'map_filter' not in st.session_state: st.session_state.map_filter = None
 df = load_and_fix_data()
 
 if df is not None:
-    # --- 5. SIDEBAR MENU & LOGIKA RESET ---
+    # --- 5. SIDEBAR MENU (MODEL TOMBOL) ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
         st.title("E-ABK SUMUT")
         st.write("---")
-        menu_pilihan = st.radio("SISTEM NAVIGASI", ["Data Provinsi", "Data Kabupaten Kota", "Data Keseluruhan", "Peta Maps Sumut"])
         
-        if 'last_menu' not in st.session_state:
-            st.session_state.last_menu = menu_pilihan
-        if menu_pilihan != st.session_state.last_menu:
-            st.session_state.last_menu = menu_pilihan
-            st.session_state.sub_view = 'LIST_KAB'
-            st.session_state.map_filter = None
+        # Inisialisasi menu aktif jika belum ada
+        if 'menu_aktif' not in st.session_state:
+            st.session_state.menu_aktif = "Data Provinsi"
+
+        # Fungsi untuk pindah menu
+        def pindah_menu(nama_menu):
+            st.session_state.menu_aktif = nama_menu
+            st.session_state.sub_view = 'LIST_KAB' # Reset tampilan sub-menu
             st.rerun()
+
+        # Deretan Tombol Menu
+        if st.button("🏢 Data Provinsi", use_container_width=True):
+            pindah_menu("Data Provinsi")
+            
+        if st.button("📍 Data Kabupaten Kota", use_container_width=True):
+            pindah_menu("Data Kabupaten Kota")
+            
+        if st.button("🌐 Data Keseluruhan", use_container_width=True):
+            pindah_menu("Data Keseluruhan")
+            
+        if st.button("🗺️ Peta Maps Sumut", use_container_width=True):
+            pindah_menu("Peta Maps Sumut")
+
+    # Ambil nilai menu dari session state untuk logika tampilan
+    menu_pilihan = st.session_state.menu_aktif
 
     # --- 6. TAMPILAN BERDASARKAN MENU ---
     if menu_pilihan == "Data Provinsi":
@@ -258,6 +275,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
