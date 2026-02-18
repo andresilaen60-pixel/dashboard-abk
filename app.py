@@ -142,12 +142,6 @@ if not st.session_state.logged_in:
     # Ambil nilai menu dari session state untuk logika tampilan
     menu_pilihan = st.session_state.menu_aktif
 
-    # Tambahkan di bagian paling bawah 'with st.sidebar:'
-    st.write("---")
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
-
     # --- 6. TAMPILAN BERDASARKAN MENU ---
     if menu_pilihan == "Data Provinsi":
         st.header("🏢 Rekapitulasi Guru Provinsi")
@@ -318,6 +312,7 @@ if not st.session_state.logged_in:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
