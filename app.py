@@ -170,3 +170,4 @@ if df is not None:
                 for _, row in target.iterrows():
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
+                        
