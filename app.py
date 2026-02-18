@@ -71,15 +71,19 @@ def login():
     with col2:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=100)
         st.header("🔑 Login E-ABK Sumut")
-        # Gunakan key agar input tidak hilang saat loading
-        u = st.text_input("Username", key="input_user")
-        p = st.text_input("Password", type="password", key="input_pass")
+        
+        # Tambahkan .strip() untuk mencegah spasi hantu
+        u_input = st.text_input("Username", key="u_key").strip()
+        p_input = st.text_input("Password", type="password", key="p_key").strip()
+        
         if st.button("Masuk Sekarang", use_container_width=True):
-            if u == "admin" and p == "sumut2026":
+            # Kita buat pengecekan yang lebih fleksibel
+            if u_input.lower() == "admin" and p_input == "sumut2026":
                 st.session_state.logged_in = True
+                st.success("Berhasil! Memuat data...")
                 st.rerun()
             else:
-                st.error("Username atau Password salah!")
+                st.error(f"Username atau Password salah! (Input: {u_input})")
 
 # --- LOGIKA TAMPILAN (CEGAT USER) ---
 if not st.session_state.logged_in:
@@ -281,6 +285,7 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
 
 
 
