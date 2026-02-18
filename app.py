@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 # --- 1. CONFIG HALAMAN ---
 st.set_page_config(page_title="Dashboard ABK Sumut 2026", layout="wide")
 
-# --- 2. CSS CUSTOM ---
+# --- 2. CSS CUSTOM (SIDEBAR PUTIH & DESIGN MODERN) ---
 st.markdown("""
     <style>
     .main { background: linear-gradient(160deg, #f0f9ff 0%, #cbebff 100%); color: #01579b; }
@@ -58,7 +58,7 @@ if 'map_filter' not in st.session_state: st.session_state.map_filter = None
 df = load_and_fix_data()
 
 if df is not None:
-    # --- 5. SIDEBAR MENU ---
+    # --- 5. SIDEBAR MENU & LOGIKA RESET ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
         st.title("E-ABK SUMUT")
@@ -72,105 +72,11 @@ if df is not None:
             st.session_state.map_filter = None
             st.rerun()
 
+    # --- 6. TAMPILAN BERDASARKAN MENU ---
+
     # A. DATA PROVINSI
     if menu_pilihan == "Data Provinsi":
         st.header("🏢 Rekapitulasi Guru Provinsi")
         c1, c2, c3 = st.columns(3)
         c1.metric("TOTAL GURU", int(df['Jml Guru'].sum()))
-        c2.metric("KEPALA SEKOLAH", int(df[df['Jabatan'].str.contains('Kepala Sekolah', case=False, na=False)]['Jml Guru'].sum()))
-        c3.metric("KEKURANGAN", int(df['Kurang Guru'].sum()))
-        st.write("---")
-        st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
-
-    # B. DATA KABUPATEN KOTA
-    elif menu_pilihan == "Data Kabupaten Kota":
-        if st.session_state.sub_view == 'LIST_KAB':
-            st.header("📍 Data Per Kabupaten / Kota")
-            search_k = st.text_input("🔍 Cari Kabupaten...")
-            kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
-            if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
-            for k in kabs:
-                df_k = df[df['Kabupaten'] == k]
-                c1, c2, c3 = st.columns([2, 1, 1])
-                if c1.button(k, key=f"kb_{k}"):
-                    st.session_state.sel_kab = k; st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
-                c2.write(f"Guru: {int(df_k['Jml Guru'].sum())}")
-                c3.write(f"Kurang: {int(df_k['Kurang Guru'].sum())}")
-
-        elif st.session_state.sub_view == 'LIST_SEKOLAH':
-            st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
-            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_KAB'; st.rerun()
-            df_kab = df[df['Kabupaten'] == st.session_state.sel_kab]
-            sch_list = df_kab['Nama Sekolah'].unique()
-            for s in sch_list:
-                if st.button(s, key=f"sk_{s}"):
-                    st.session_state.sel_sch = s; st.session_state.sub_view = 'DETAIL'; st.rerun()
-
-        elif st.session_state.sub_view == 'DETAIL':
-            st.header(f"🔍 Detail: {st.session_state.sel_sch}")
-            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
-            df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
-            df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
-            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th></tr>"
-            for _, row in df_res.iterrows():
-                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
-                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{int(row['Selisih'])}</td></tr>"
-            st.markdown(html + "</table>", unsafe_allow_html=True)
-
-    # C. DATA KESELURUHAN
-    elif menu_pilihan == "Data Keseluruhan":
-        st.header("🌐 Seluruh Data Pemetaan")
-        search_all = st.text_input("🔍 Cari data...")
-        df_all = df[['Kabupaten', 'Nama Sekolah', 'Jabatan', 'Jml Guru', 'Kurang Guru', 'Keterangan']].copy()
-        if search_all:
-            mask = df_all.apply(lambda x: x.astype(str).str.contains(search_all, case=False)).any(axis=1)
-            df_all = df_all[mask]
-        st.dataframe(df_all, use_container_width=True, hide_index=True)
-
-    # D. PETA MAPS SUMUT (MENU KE-4)
-    elif menu_pilihan == "Peta Maps Sumut":
-        st.header("🗺️ Peta Sebaran Guru Sumut")
-        
-        # Judul Kolom Tombol
-        col1, col2, _ = st.columns([1, 1, 2])
-        with col1:
-            st.write("**Guru Kurang**")
-            if st.button("🔴 Tampilkan Merah"): st.session_state.map_filter = "Kurang"
-        with col2:
-            st.write("**Guru Lebih**")
-            if st.button("🔵 Tampilkan Biru"): st.session_state.map_filter = "Lebih"
-            
-        m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
-        kab_coords = {
-            "Kab. Asahan": [2.98, 99.61], "Kota Medan": [3.59, 98.67], "Kab. Dairi": [2.74, 98.31],
-            "Kab. Deli Serdang": [3.42, 98.70], "Kab. Karo": [3.11, 98.26], "Kab. Simalungun": [2.90, 99.05]
-        }
-
-        for kab, loc in kab_coords.items():
-            df_k = df[df['Kabupaten'] == kab]
-            if st.session_state.map_filter == "Kurang":
-                val = int(df_k['Kurang Guru'].sum())
-                if val > 0: folium.CircleMarker(loc, radius=12, color='red', fill=True, popup=f"{kab}: {val} Kurang").addTo(m)
-            elif st.session_state.map_filter == "Lebih":
-                val = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
-                if val > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {val} Lebih").addTo(m)
-
-        st_folium(m, width=None, height=450)
-
-        if st.session_state.map_filter:
-            st.write("---")
-            st.subheader("Sekolah") # Judul di atas dropdown sekolah
-            if st.session_state.map_filter == "Kurang":
-                list_s = sorted(df[df['Kurang Guru'] > 0]['Nama Sekolah'].unique())
-            else:
-                list_s = sorted(df[df['Jml Guru'] > df['ABK']]['Nama Sekolah'].unique())
-            
-            sel_s = st.selectbox("Pilih Nama Sekolah:", ["-- Pilih Sekolah --"] + list(list_s))
-            if sel_s != "-- Pilih Sekolah --":
-                st.info(f"🏢 **Detail: {sel_s}**")
-                df_s = df[df['Nama Sekolah'] == sel_s]
-                target = df_s[df_s['Kurang Guru'] > 0] if st.session_state.map_filter == "Kurang" else df_s[df_s['Jml Guru'] > df_s['ABK']]
-                for _, row in target.iterrows():
-                    with st.expander(f"📖 {row['Jabatan']}"):
-                        st.write(f"Jumlah Guru: {int(row['Jml Guru'])} | Kebutuhan: {int(row['ABK'])}")
-                        if 'Nama Guru' in df.columns: st.write(f"Nama Guru: {row['Nama Guru']}")
+        c2.metric("KEPALA SEKOLAH", int(df[df['Jabatan'].str.contains('Kepala Sekolah',
