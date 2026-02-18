@@ -66,40 +66,29 @@ def load_and_fix_data():
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-def login():
+if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=100)
         st.header("🔑 Login E-ABK Sumut")
-        
-        # Tambahkan .strip() untuk mencegah spasi hantu
-        u_input = st.text_input("Username", key="u_key").strip()
-        p_input = st.text_input("Password", type="password", key="p_key").strip()
+        u_input = st.text_input("Username").strip()
+        p_input = st.text_input("Password", type="password").strip()
         
         if st.button("Masuk Sekarang", use_container_width=True):
-            # Kita buat pengecekan yang lebih fleksibel
-            if u_input.lower() == "admin" and p_input == "sumut2026":
+            # Cek login dengan sangat simpel
+            if u_input == "admin" and p_input == "sumut2026":
                 st.session_state.logged_in = True
-                st.success("Berhasil! Memuat data...")
                 st.rerun()
             else:
-                st.error(f"Username atau Password salah! (Input: {u_input})")
+                st.error("Username atau Password salah!")
+    st.stop() # Paksa berhenti di sini jika belum login
 
-# --- LOGIKA TAMPILAN (CEGAT USER) ---
-if not st.session_state.logged_in:
-    login()
-    st.stop()
-
-# --- 5. SETUP DASHBOARD (HANYA JALAN JIKA SUDAH LOGIN) ---
-# Kita masukkan loading data ke sini agar tidak bentrok dengan login
+# --- 5. SETUP DASHBOARD ---
 df, df_guru = load_and_fix_data()
-
 if 'sub_view' not in st.session_state: st.session_state.sub_view = 'LIST_KAB'
 if 'menu_aktif' not in st.session_state: st.session_state.menu_aktif = "Data Provinsi"
-# Pastikan variabel personil dan npsn juga diinisialisasi
 if 'view_personil' not in st.session_state: st.session_state.view_personil = False
 if 'sel_npsn' not in st.session_state: st.session_state.sel_npsn = None
-
 # --- 6. LOGIKA MENU ---
 if df is not None:
     if menu_pilihan == "Data Provinsi":
@@ -285,6 +274,7 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
 
 
 
