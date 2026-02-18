@@ -28,19 +28,32 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOAD DATA ---
+# --- 3. LOAD DATA (VERSI LEBIH KUAT) ---
 @st.cache_data
 def load_and_fix_data():
     try:
-        xls = pd.ExcelFile("data.xlsx")
+        # Menambahkan engine='openpyxl' secara paksa
+        xls = pd.ExcelFile("data.xlsx", engine='openpyxl')
+        
+        # Ambil sheet pertama secara otomatis (biar aman kalau namanya beda)
         df_u = pd.read_excel(xls, sheet_name=0)
-        df_s = pd.read_excel(xls, sheet_name="DAFTAR SEKOLAH")
+        
+        # Cari sheet DAFTAR SEKOLAH
+        sheet_names = xls.sheet_names
+        if "DAFTAR SEKOLAH" in sheet_names:
+            df_s = pd.read_excel(xls, sheet_name="DAFTAR SEKOLAH")
+        else:
+            # Kalau namanya beda sedikit (misal spasi), ambil sheet ke-2
+            df_s = pd.read_excel(xls, sheet_name=1)
+            
         df_u.columns = df_u.columns.str.strip()
         df_s.columns = df_s.columns.str.strip()
+        
         df_s_fix = df_s[['NPSN', 'Kabupaten/Kota']].drop_duplicates()
         df = pd.merge(df_u, df_s_fix, on='NPSN', how='left')
         df['Kabupaten'] = df['Kabupaten/Kota'].fillna(df['KABUPATEN BY NAMA SEKOLAH']).fillna("Lainnya")
         df.fillna(0, inplace=True)
+        
         def cek_status(row):
             if row['Jml Guru'] > row['ABK']: return "Lebih Guru"
             elif row['Jml Guru'] < row['ABK']: return "Kurang Guru"
@@ -171,3 +184,4 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
