@@ -98,19 +98,29 @@ if df is not None:
         st.write("---")
         st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
 
-    # B. DATA KABUPATEN KOTA
+   # B. DATA KABUPATEN KOTA
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
             
-            # --- 1. TOMBOL GRAFIK KABUPATEN (PALING ATAS) ---
-            if st.button("📊 Tampilkan Grafik Perbandingan Kab/Kota"):
+            # --- 1. TOMBOL GRAFIK KABUPATEN DENGAN WARNA KHUSUS ---
+            if st.button("📊 Tampilkan Grafik Analisis Kab/Kota"):
                 if 'show_chart_kab' not in st.session_state: st.session_state.show_chart_kab = False
                 st.session_state.show_chart_kab = not st.session_state.show_chart_kab
             
             if st.session_state.get('show_chart_kab', False):
-                df_chart = df.groupby('Kabupaten')['Jml Guru'].sum().reset_index()
-                st.bar_chart(df_chart.set_index('Kabupaten'))
+                # Menghitung Total Guru dan Total Kurang per Kabupaten
+                df_chart = df.groupby('Kabupaten').agg({
+                    'Jml Guru': 'sum',
+                    'Kurang Guru': 'sum'
+                }).reset_index()
+                
+                # Menampilkan Grafik dengan kolom Jml Guru (Biru default) dan Kurang Guru (Merah)
+                # Catatan: st.bar_chart secara otomatis memberi warna berbeda untuk tiap kolom
+                st.bar_chart(
+                    df_chart.set_index('Kabupaten')[['Jml Guru', 'Kurang Guru']],
+                    color=["#0000FF", "#FF0000"] # Biru untuk Jml Guru, Merah untuk Kurang Guru
+                )
             
             st.write("---")
             search_k = st.text_input("🔍 Cari Kabupaten...")
@@ -133,18 +143,12 @@ if df is not None:
         elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
             
-            # --- 2. TOMBOL KEMBALI & GRAFIK SEKOLAH ---
-            c_back, c_chart = st.columns([1, 3])
-            with c_back:
-                if st.button("⬅ Kembali"): 
-                    st.session_state.sub_view = 'LIST_KAB'
-                    st.rerun()
-            with c_chart:
-                if st.button(f"📊 Grafik Analisis Guru di {st.session_state.sel_kab}"):
-                    if 'show_chart_sch' not in st.session_state: st.session_state.show_chart_sch = False
-                    st.session_state.show_chart_sch = not st.session_state.show_chart_sch
+            # --- TOMBOL KEMBALI (SUDAH DIKEMBALIKAN) ---
+            if st.button("⬅ Kembali"): 
+                st.session_state.sub_view = 'LIST_KAB'
+                st.rerun()
 
-            # Hitung Ringkasan (Logika Sinkron)
+            # Hitung Ringkasan (Logika Sinkron) - GRAFIK DI SINI SUDAH DIHAPUS
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab].copy()
             df_kab['Selisih_Real'] = df_kab['Jml Guru'] - df_kab['ABK']
             sch_summary = df_kab.groupby('Nama Sekolah').apply(
@@ -153,11 +157,6 @@ if df is not None:
                     'Lebih': x[x['Selisih_Real'] > 0]['Selisih_Real'].sum()
                 })
             ).reset_index()
-
-            # Tampilan Grafik jika tombol diklik
-            if st.session_state.get('show_chart_sch', False):
-                st.write(f"**Visualisasi Kekurangan & Kelebihan Guru**")
-                st.bar_chart(sch_summary.set_index('Nama Sekolah')[['Kurang', 'Lebih']])
             
             st.write("---")
             search_s = st.text_input("🔍 Cari Sekolah...")
@@ -250,6 +249,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
