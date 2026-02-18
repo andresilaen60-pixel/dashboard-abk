@@ -143,12 +143,18 @@ if df is not None:
         elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
             
-            # --- TOMBOL KEMBALI (SUDAH DIKEMBALIKAN) ---
-            if st.button("⬅ Kembali"): 
-                st.session_state.sub_view = 'LIST_KAB'
-                st.rerun()
+            # --- MERAPATKAN TOMBOL KEMBALI & CARI SEKOLAH ---
+            c1, c2 = st.columns([1, 4]) # Kolom 1 untuk tombol, Kolom 2 untuk search
+            with c1:
+                # Memberikan sedikit margin atas agar sejajar dengan input box
+                st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+                if st.button("⬅ Kembali"): 
+                    st.session_state.sub_view = 'LIST_KAB'
+                    st.rerun()
+            with c2:
+                search_s = st.text_input("🔍 Cari Sekolah...", placeholder="Ketik nama sekolah di sini...")
 
-            # Hitung Ringkasan (Logika Sinkron) - GRAFIK DI SINI SUDAH DIHAPUS
+            # Logika Hitung (Tetap Sama)
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab].copy()
             df_kab['Selisih_Real'] = df_kab['Jml Guru'] - df_kab['ABK']
             sch_summary = df_kab.groupby('Nama Sekolah').apply(
@@ -158,14 +164,17 @@ if df is not None:
                 })
             ).reset_index()
             
-            st.write("---")
-            search_s = st.text_input("🔍 Cari Sekolah...")
             if search_s:
                 sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
 
-            # CSS Merapatkan & Tengah
-            st.markdown("""<style>.center-text { text-align: center; font-weight: bold; margin-bottom: 0px; } 
-                        .stButton button { margin-bottom: -15px !important; }</style>""", unsafe_allow_html=True)
+            st.write("---")
+
+            # CSS untuk merapatkan baris tabel
+            st.markdown("""<style>
+                .center-text { text-align: center; font-weight: bold; margin-bottom: 0px; } 
+                .stButton button { margin-bottom: -15px !important; }
+                div[data-testid="stVerticalBlock"] > div { font-gap: 0rem !important; } /* Memangkas gap antar baris */
+                </style>""", unsafe_allow_html=True)
 
             h1, h2, h3 = st.columns([2, 1, 1])
             h1.markdown("**Nama Sekolah**")
@@ -249,6 +258,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
