@@ -241,14 +241,33 @@ if df is not None:
             else:
                 # --- TAMPILAN DATA PERSONIL (SHEET 3) ---
                 st.subheader(f"👥 Daftar Guru: {st.session_state.sel_jabatan}")
-                detail_p = df_guru[(df_guru['Nama Sekolah'] == st.session_state.sel_sch) & 
-                                   (df_guru['Jabatan'] == st.session_state.sel_jabatan)]
+                
+                # Kita buat perbandingan yang tidak sensitif huruf besar/kecil (Case Insensitive)
+                # Dan kita buang spasi di awal/akhir (Strip)
+                df_guru['Nama Sekolah_Clean'] = df_guru['Nama Sekolah'].str.strip().str.upper()
+                df_guru['Jabatan_Clean'] = df_guru['Jabatan'].str.strip().str.upper()
+                
+                target_sekolah = st.session_state.sel_sch.strip().upper()
+                target_jabatan = st.session_state.sel_jabatan.strip().upper()
+
+                detail_p = df_guru[
+                    (df_guru['Nama Sekolah_Clean'] == target_sekolah) & 
+                    (df_guru['Jabatan_Clean'] == target_jabatan)
+                ]
                 
                 if not detail_p.empty:
-                    # Menghapus index agar terlihat bersih
-                    st.table(detail_p[['Nama', 'NIP', 'NIK']].reset_index(drop=True))
+                    # Menampilkan Nama, NIP, NIK
+                    # Kita pakai kolom asli untuk ditampilkan
+                    cols = [c for c in ['Nama', 'NIP', 'NIK'] if c in df_guru.columns]
+                    st.table(detail_p[cols].reset_index(drop=True))
                 else:
-                    st.warning("Data personil rinci belum diisi di Sheet 'Data Guru'.")
+                    st.warning(f"Data tidak ditemukan untuk Jabatan: {st.session_state.sel_jabatan}")
+                    # FITUR DEBUG (Hanya untuk Andre cek)
+                    with st.expander("Klik untuk cek masalah data (Debug)"):
+                        st.write(f"Mencari Sekolah: '{target_sekolah}'")
+                        st.write(f"Mencari Jabatan: '{target_jabatan}'")
+                        st.write("Data yang tersedia di Sheet 3 (5 baris pertama):")
+                        st.write(df_guru[['Nama Sekolah', 'Jabatan']].head())
 
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
@@ -277,5 +296,6 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
 
 
