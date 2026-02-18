@@ -107,7 +107,7 @@ if df is not None:
             kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
             if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
             
-            h1, h2, h3 = st.columns([2, 1, 1]); h1.write("**Kabupaten**"); h2.write("**Guru**"); h3.write("**KS**")
+            h1, h2, h3 = st.columns([2, 1, 1]); h1.write("**Kabupaten**"); h2.write("**Guru**"); h3.write("**Kepala Sekolah**")
             for k in kabs:
                 df_k = df[df['Kabupaten'] == k]
                 c1, c2, c3 = st.columns([2, 1, 1])
@@ -155,3 +155,4 @@ if df is not None:
         st.dataframe(df_all, use_container_width=True, hide_index=True)
 
     
+
