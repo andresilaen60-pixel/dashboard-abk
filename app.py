@@ -102,6 +102,17 @@ if df is not None:
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
+            
+            # --- 1. TOMBOL GRAFIK KABUPATEN (PALING ATAS) ---
+            if st.button("📊 Tampilkan Grafik Perbandingan Kab/Kota"):
+                if 'show_chart_kab' not in st.session_state: st.session_state.show_chart_kab = False
+                st.session_state.show_chart_kab = not st.session_state.show_chart_kab
+            
+            if st.session_state.get('show_chart_kab', False):
+                df_chart = df.groupby('Kabupaten')['Jml Guru'].sum().reset_index()
+                st.bar_chart(df_chart.set_index('Kabupaten'))
+            
+            st.write("---")
             search_k = st.text_input("🔍 Cari Kabupaten...")
             kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
             if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
@@ -121,27 +132,35 @@ if df is not None:
 
         elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
-            if st.button("⬅ Kembali"): 
-                st.session_state.sub_view = 'LIST_KAB'
-                st.rerun()
             
-            search_s = st.text_input("🔍 Cari Sekolah...")
-            
-            # --- LOGIKA SINKRONISASI (Menghitung Selisih Real) ---
+            # --- 2. TOMBOL KEMBALI & GRAFIK SEKOLAH ---
+            c_back, c_chart = st.columns([1, 3])
+            with c_back:
+                if st.button("⬅ Kembali"): 
+                    st.session_state.sub_view = 'LIST_KAB'
+                    st.rerun()
+            with c_chart:
+                if st.button(f"📊 Grafik Analisis Guru di {st.session_state.sel_kab}"):
+                    if 'show_chart_sch' not in st.session_state: st.session_state.show_chart_sch = False
+                    st.session_state.show_chart_sch = not st.session_state.show_chart_sch
+
+            # Hitung Ringkasan (Logika Sinkron)
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab].copy()
-            
-            # Kita buat kolom selisih baru agar hitungannya jujur
             df_kab['Selisih_Real'] = df_kab['Jml Guru'] - df_kab['ABK']
-            
             sch_summary = df_kab.groupby('Nama Sekolah').apply(
                 lambda x: pd.Series({
-                    # Menjumlahkan hanya yang hasilnya negatif (Kurang)
                     'Kurang': abs(x[x['Selisih_Real'] < 0]['Selisih_Real'].sum()),
-                    # Menjumlahkan hanya yang hasilnya positif (Lebih)
                     'Lebih': x[x['Selisih_Real'] > 0]['Selisih_Real'].sum()
                 })
             ).reset_index()
 
+            # Tampilan Grafik jika tombol diklik
+            if st.session_state.get('show_chart_sch', False):
+                st.write(f"**Visualisasi Kekurangan & Kelebihan Guru**")
+                st.bar_chart(sch_summary.set_index('Nama Sekolah')[['Kurang', 'Lebih']])
+            
+            st.write("---")
+            search_s = st.text_input("🔍 Cari Sekolah...")
             if search_s:
                 sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
 
@@ -231,6 +250,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
