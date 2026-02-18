@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-import json
 
 # --- 1. CONFIG HALAMAN ---
 st.set_page_config(page_title="Dashboard ABK Sumut 2026", layout="wide")
@@ -21,6 +20,7 @@ st.markdown("""
     .custom-table td { padding: 10px; border-bottom: 1px solid #ddd; }
     .bg-kurang { background-color: rgba(255, 0, 0, 0.1) !important; }
     .bg-lebih { background-color: rgba(0, 0, 255, 0.1) !important; }
+    .center-text { text-align: center; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,11 +32,9 @@ def load_and_fix_data():
         df_u = pd.read_excel(xls, sheet_name=0)
         sheet_names = xls.sheet_names
         df_s = pd.read_excel(xls, sheet_name="DAFTAR SEKOLAH" if "DAFTAR SEKOLAH" in sheet_names else 1)
-        df_g = pd.read_excel(xls, sheet_name="Data Guru" if "Data Guru" in sheet_names else 2)
         
         df_u.columns = df_u.columns.str.strip()
         df_s.columns = df_s.columns.str.strip()
-        df_g.columns = df_g.columns.str.strip()
 
         df_s_fix = df_s[['NPSN', 'Kabupaten/Kota']].drop_duplicates()
         df = pd.merge(df_u, df_s_fix, on='NPSN', how='left')
@@ -45,9 +43,10 @@ def load_and_fix_data():
         
         df['Keterangan'] = df.apply(lambda r: "Lebih Guru" if r['Jml Guru'] > r['ABK'] else ("Kurang Guru" if r['Jml Guru'] < r['ABK'] else "Sesuai"), axis=1)
         
-        return df, df_g
+        return df
     except Exception as e:
-        return None, None
+        st.error(f"Eror Memuat Data: {e}")
+        return None
 
 # --- 4. SISTEM LOGIN ---
 if 'logged_in' not in st.session_state:
@@ -58,10 +57,10 @@ if not st.session_state.logged_in:
     with col2:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=100)
         st.header("🔑 Login E-ABK Sumut")
-        u_val = st.text_input("Username").strip()
-        p_val = st.text_input("Password", type="password").strip()
+        u = st.text_input("Username").strip()
+        p = st.text_input("Password", type="password").strip()
         if st.button("Masuk Sekarang"):
-            if u_val == "admin" and p_val == "sumut2026":
+            if u == "admin" and p == "sumut2026":
                 st.session_state.logged_in = True
                 st.rerun()
             else:
@@ -69,14 +68,9 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- 5. SETUP DASHBOARD ---
-df, df_guru = load_and_fix_data()
-
-# Inisialisasi State
-for key in ['sub_view', 'menu_aktif', 'view_personil', 'sel_kab', 'sel_sch', 'sel_jabatan']:
-    if key not in st.session_state:
-        if key == 'sub_view': st.session_state[key] = 'LIST_KAB'
-        elif key == 'menu_aktif': st.session_state[key] = "Data Provinsi"
-        else: st.session_state[key] = None
+df = load_and_fix_data()
+if 'sub_view' not in st.session_state: st.session_state.sub_view = 'LIST_KAB'
+if 'menu_aktif' not in st.session_state: st.session_state.menu_aktif = "Data Provinsi"
 
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
@@ -86,7 +80,6 @@ with st.sidebar:
     def nav(m):
         st.session_state.menu_aktif = m
         st.session_state.sub_view = 'LIST_KAB'
-        st.session_state.view_personil = False
         st.rerun()
 
     if st.button("🏢 Data Provinsi"): nav("Data Provinsi")
@@ -99,11 +92,11 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.rerun()
 
-# --- 6. LOGIKA TAMPILAN ---
-menu = st.session_state.menu_aktif
+menu_pilihan = st.session_state.menu_aktif
 
+# --- 6. LOGIKA MENU ---
 if df is not None:
-    if menu == "Data Provinsi":
+    if menu_pilihan == "Data Provinsi":
         st.header("🏢 Rekapitulasi Guru Provinsi")
         c1, c2, c3 = st.columns(3)
         c1.metric("TOTAL GURU", int(df['Jml Guru'].sum()))
@@ -112,7 +105,7 @@ if df is not None:
         st.write("---")
         st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
 
-    elif menu == "Data Kabupaten Kota":
+    elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
             search_k = st.text_input("🔍 Cari Kabupaten...")
@@ -143,31 +136,19 @@ if df is not None:
 
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
-            if st.button("⬅ Kembali"):
-                if st.session_state.view_personil: st.session_state.view_personil = False
-                else: st.session_state.sub_view = 'LIST_SEKOLAH'
-                st.rerun()
+            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
+            
+            df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
+            df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
+            
+            st.markdown("<table class='custom-table'><tr><th>Jabatan</th><th>ABK</th><th>Jml Guru</th><th>Selisih</th></tr>", unsafe_allow_html=True)
+            for _, row in df_res.iterrows():
+                s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
+                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
+                st.markdown(f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td><b>{s_val}</b></td></tr>", unsafe_allow_html=True)
+            st.markdown("</table>", unsafe_allow_html=True)
 
-            if not st.session_state.view_personil:
-                df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
-                for i, row in df_res.iterrows():
-                    c1, c2, c3 = st.columns([2, 1, 1])
-                    c1.write(row['Jabatan'])
-                    c2.write(f"ABK: {int(row['ABK'])}")
-                    if c3.button(f"Guru: {int(row['Jml Guru'])}", key=f"bp_{i}"):
-                        st.session_state.sel_jabatan = row['Jabatan']
-                        st.session_state.view_personil = True
-                        st.rerun()
-            else:
-                st.subheader(f"👥 Personil: {st.session_state.sel_jabatan}")
-                # Logika pencarian personil yang aman
-                df_guru['S_UP'] = df_guru['Nama Sekolah'].str.upper().str.strip()
-                df_guru['J_UP'] = df_guru['Jabatan'].str.upper().str.strip()
-                match = df_guru[(df_guru['S_UP'] == st.session_state.sel_sch.upper().strip()) & (df_guru['J_UP'] == st.session_state.sel_jabatan.upper().strip())]
-                if not match.empty: st.table(match[['Nama', 'NIP', 'NIK']])
-                else: st.warning("Data personil tidak ditemukan di Sheet 3.")
-
-    elif menu == "Data Keseluruhan":
+    elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
         search_all = st.text_input("🔍 Cari data...")
         df_all = df[['Kabupaten', 'Nama Sekolah', 'Jabatan', 'Jml Guru', 'Kurang Guru', 'Keterangan']].copy()
@@ -176,7 +157,7 @@ if df is not None:
             df_all = df_all[mask]
         st.dataframe(df_all, use_container_width=True, hide_index=True)
 
-    elif menu == "Peta Maps Sumut":
+    elif menu_pilihan == "Peta Maps Sumut":
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
