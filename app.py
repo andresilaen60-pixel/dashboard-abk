@@ -73,6 +73,43 @@ if 'map_filter' not in st.session_state: st.session_state.map_filter = None
 df = load_and_fix_data()
 
 if df is not None:
+
+    # --- FUNGSI LOGIN ---
+def login():
+    st.markdown("""
+        <style>
+        .login-box {
+            background-color: white; padding: 30px; border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.1); border: 1px solid #0288d1;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=100)
+        st.header("🔑 Login E-ABK Sumut")
+        with st.container():
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            if st.button("Masuk Sekarang", use_container_width=True):
+                # Ganti 'admin' dan 'sumut2026' dengan keinginanmu
+                if username == "admin" and password == "sumut2026":
+                    st.session_state.logged_in = True
+                    st.success("Login Berhasil!")
+                    st.rerun()
+                else:
+                    st.error("Username atau Password salah!")
+
+# Inisialisasi status login
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+# --- LOGIKA TAMPILAN (CEGAT USER) ---
+if not st.session_state.logged_in:
+    login()
+    st.stop() # Hentikan eksekusi kode di sini kalau belum login
+    
     # --- 5. SIDEBAR MENU (MODEL TOMBOL) ---
     with st.sidebar:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
@@ -104,6 +141,12 @@ if df is not None:
 
     # Ambil nilai menu dari session state untuk logika tampilan
     menu_pilihan = st.session_state.menu_aktif
+
+    # Tambahkan di bagian paling bawah 'with st.sidebar:'
+    st.write("---")
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
 
     # --- 6. TAMPILAN BERDASARKAN MENU ---
     if menu_pilihan == "Data Provinsi":
@@ -275,6 +318,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
