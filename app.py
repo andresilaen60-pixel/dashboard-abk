@@ -98,12 +98,19 @@ if df is not None:
         st.write("---")
         st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
 
+    # B. DATA KABUPATEN KOTA
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
             search_k = st.text_input("🔍 Cari Kabupaten...")
             kabs = sorted([k for k in df['Kabupaten'].unique() if k != "Lainnya"])
             if search_k: kabs = [k for k in kabs if search_k.lower() in k.lower()]
+            
+            h1, h2, h3 = st.columns([2, 1, 1])
+            h1.write("**Kabupaten**")
+            h2.write("**Guru**")
+            h3.write("**Kepala Sekolah**")
+            
             for k in kabs:
                 df_k = df[df['Kabupaten'] == k]
                 c1, c2, c3 = st.columns([2, 1, 1])
@@ -112,7 +119,7 @@ if df is not None:
                 c2.write(int(df_k['Jml Guru'].sum()))
                 c3.write(int(df_k[df_k['Jabatan'].str.contains('Kepala Sekolah', case=False)]['Jml Guru'].sum()))
 
-      elif st.session_state.sub_view == 'LIST_SEKOLAH':
+        elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
             if st.button("⬅ Kembali"): 
                 st.session_state.sub_view = 'LIST_KAB'
@@ -132,37 +139,41 @@ if df is not None:
             if search_s:
                 sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
 
-            # --- CSS Tambahan untuk Merapatkan Baris & Rata Tengah ---
-            st.markdown("""
-                <style>
-                .center-text { text-align: center; font-weight: bold; margin-bottom: 0px; }
-                div[data-testid="column"] { padding: 0px 5px !important; }
-                .stButton button { margin-bottom: -15px !important; } /* Merapatkan tombol ke baris bawah */
-                </style>
-            """, unsafe_allow_html=True)
+            # CSS Merapatkan Baris & Rata Tengah
+            st.markdown("""<style>.center-text { text-align: center; font-weight: bold; margin-bottom: 0px; } 
+                        .stButton button { margin-bottom: -15px !important; }</style>""", unsafe_allow_html=True)
 
-            # Header Judul Kolom Rata Tengah
+            # Header Rata Tengah
             h1, h2, h3 = st.columns([2, 1, 1])
-            h1.markdown("<p style='text-align: left; font-weight: bold;'>Nama Sekolah</p>", unsafe_allow_html=True)
+            h1.markdown("**Nama Sekolah**")
             h2.markdown("<p class='center-text'>Guru Kurang</p>", unsafe_allow_html=True)
             h3.markdown("<p class='center-text'>Guru Lebih</p>", unsafe_allow_html=True)
             st.write("---")
 
-            # Baris per Sekolah (Jarak Dirapatkan)
             for i, row in sch_summary.iterrows():
                 c1, c2, c3 = st.columns([2, 1, 1])
-                # Kolom 1: Nama Sekolah
                 with c1:
                     if st.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
                         st.session_state.sel_sch = row['Nama Sekolah']
                         st.session_state.sub_view = 'DETAIL'
                         st.rerun()
-                # Kolom 2: Angka Kurang (Rata Tengah)
                 with c2:
                     st.markdown(f"<p class='center-text' style='color: red;'>🔴 {int(row['Kurang'])}</p>", unsafe_allow_html=True)
-                # Kolom 3: Angka Lebih (Rata Tengah)
                 with c3:
                     st.markdown(f"<p class='center-text' style='color: blue;'>🔵 {int(row['Lebih'])}</p>", unsafe_allow_html=True)
+
+        elif st.session_state.sub_view == 'DETAIL':
+            st.header(f"🔍 Detail: {st.session_state.sel_sch}")
+            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
+            df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
+            df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
+            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th><th>Keterangan</th></tr>"
+            for _, row in df_res.iterrows():
+                s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
+                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
+                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{s_val}</td><td>{row['Keterangan']}</td></tr>"
+            st.markdown(html + "</table>", unsafe_allow_html=True)
+                    
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
         search_all = st.text_input("🔍 Cari data...")
@@ -215,6 +226,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
