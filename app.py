@@ -37,22 +37,31 @@ def load_and_fix_data():
         df_u = pd.read_excel(xls, sheet_name=0)
         sheet_names = xls.sheet_names
         df_s = pd.read_excel(xls, sheet_name="DAFTAR SEKOLAH" if "DAFTAR SEKOLAH" in sheet_names else 1)
+        
+        # MEMBACA SHEET 3 (DATA GURU)
+        df_g = pd.read_excel(xls, sheet_name="Data Guru" if "Data Guru" in sheet_names else 2)
+        
         df_u.columns = df_u.columns.str.strip()
         df_s.columns = df_s.columns.str.strip()
+        df_g.columns = df_g.columns.str.strip() # Bersihkan spasi di judul kolom
+
         df_s_fix = df_s[['NPSN', 'Kabupaten/Kota']].drop_duplicates()
         df = pd.merge(df_u, df_s_fix, on='NPSN', how='left')
         df['Kabupaten'] = df['Kabupaten/Kota'].fillna(df['KABUPATEN BY NAMA SEKOLAH']).fillna("Lainnya")
         df.fillna(0, inplace=True)
+        
         def cek_status(row):
             if row['Jml Guru'] > row['ABK']: return "Lebih Guru"
             elif row['Jml Guru'] < row['ABK']: return "Kurang Guru"
             else: return "Sesuai"
         df['Keterangan'] = df.apply(cek_status, axis=1)
-        return df
+        
+        # Kembalikan dua dataframe: data utama dan data guru
+        return df, df_g
     except Exception as e:
         st.error(f"Eror Memuat Data: {e}")
-        return None
-
+        return None, None
+        
 # --- 4. SISTEM LOGIN ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -113,6 +122,7 @@ if df is not None:
         st.write("---")
         st.dataframe(df.groupby('Kabupaten').agg({'Jml Guru':'sum', 'Kurang Guru':'sum'}).reset_index(), use_container_width=True, hide_index=True)
 
+   # B. DATA KABUPATEN KOTA
     elif menu_pilihan == "Data Kabupaten Kota":
         if st.session_state.sub_view == 'LIST_KAB':
             st.header("📍 Data Per Kabupaten / Kota")
@@ -157,21 +167,64 @@ if df is not None:
                 c1, c2, c3 = st.columns([2, 1, 1])
                 with c1:
                     if st.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
-                        st.session_state.sel_sch = row['Nama Sekolah']; st.session_state.sub_view = 'DETAIL'; st.rerun()
+                        st.session_state.sel_sch = row['Nama Sekolah']; st.session_state.sub_view = 'DETAIL'; st.session_state.view_personil = False; st.rerun()
                 with c2: st.markdown(f"<p class='center-text' style='color: red;'>🔴 {int(row['Kurang'])}</p>", unsafe_allow_html=True)
                 with c3: st.markdown(f"<p class='center-text' style='color: blue;'>🔵 {int(row['Lebih'])}</p>", unsafe_allow_html=True)
 
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
-            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
-            df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
-            df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
-            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th><th>Keterangan</th></tr>"
-            for _, row in df_res.iterrows():
-                s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
-                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
-                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{s_val}</td><td>{row['Keterangan']}</td></tr>"
-            st.markdown(html + "</table>", unsafe_allow_html=True)
+            
+            # Saklar tampilan: Balik ke daftar jabatan atau ke daftar sekolah
+            if st.button("⬅ Kembali"):
+                if st.session_state.get('view_personil', False):
+                    st.session_state.view_personil = False
+                else:
+                    st.session_state.sub_view = 'LIST_SEKOLAH'
+                st.rerun()
+
+            if not st.session_state.get('view_personil', False):
+                df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
+                df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
+                
+                st.write("---")
+                h1, h2, h3, h4 = st.columns([2, 1, 1, 1])
+                h1.write("**Jabatan**")
+                h2.write("**ABK**")
+                h3.write("**Jml Guru (Klik)**")
+                h4.write("**Selisih**")
+                st.write("---")
+
+                for _, row in df_res.iterrows():
+                    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+                    c1.write(row['Jabatan'])
+                    c2.write(int(row['ABK']))
+                    with c3:
+                        if row['Jml Guru'] > 0:
+                            # Angka jumlah guru menjadi tombol untuk "drill-down" ke personil
+                            if st.button(f"{int(row['Jml Guru'])}", key=f"btn_p_{row['Jabatan']}"):
+                                st.session_state.sel_jabatan = row['Jabatan']
+                                st.session_state.view_personil = True
+                                st.rerun()
+                        else:
+                            st.write("0")
+                    
+                    s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
+                    color = "red" if row['Selisih'] < 0 else "blue" if row['Selisih'] > 0 else "black"
+                    c4.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_val}</span>", unsafe_allow_html=True)
+            
+            else:
+                # --- TAMPILAN DATA PERSONIL (SHEET 3) ---
+                st.subheader(f"👥 Personil: {st.session_state.sel_jabatan}")
+                
+                # Filter data dari df_guru berdasarkan NPSN/Sekolah dan Jabatan
+                detail_p = df_guru[(df_guru['Nama Sekolah'] == st.session_state.sel_sch) & 
+                                   (df_guru['Jabatan'] == st.session_state.sel_jabatan)]
+                
+                if not detail_p.empty:
+                    # Menampilkan Nama, NIP, NIK yang ada di Sheet 3
+                    st.table(detail_p[['Nama', 'NIP', 'NIK']])
+                else:
+                    st.warning("Data personil rinci belum diisi di Sheet 'Data Guru'.")
 
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
@@ -200,3 +253,4 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
