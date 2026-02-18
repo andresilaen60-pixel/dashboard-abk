@@ -112,7 +112,7 @@ if df is not None:
                 c2.write(int(df_k['Jml Guru'].sum()))
                 c3.write(int(df_k[df_k['Jabatan'].str.contains('Kepala Sekolah', case=False)]['Jml Guru'].sum()))
 
-        elif st.session_state.sub_view == 'LIST_SEKOLAH':
+      elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
             if st.button("⬅ Kembali"): 
                 st.session_state.sub_view = 'LIST_KAB'
@@ -120,7 +120,7 @@ if df is not None:
             
             search_s = st.text_input("🔍 Cari Sekolah...")
             
-            # Mengambil data sekolah dan menghitung ringkasan Kurang/Lebih
+            # Hitung Ringkasan
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab]
             sch_summary = df_kab.groupby('Nama Sekolah').apply(
                 lambda x: pd.Series({
@@ -132,34 +132,37 @@ if df is not None:
             if search_s:
                 sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
 
-            # Header Judul Kolom
+            # --- CSS Tambahan untuk Merapatkan Baris & Rata Tengah ---
+            st.markdown("""
+                <style>
+                .center-text { text-align: center; font-weight: bold; margin-bottom: 0px; }
+                div[data-testid="column"] { padding: 0px 5px !important; }
+                .stButton button { margin-bottom: -15px !important; } /* Merapatkan tombol ke baris bawah */
+                </style>
+            """, unsafe_allow_html=True)
+
+            # Header Judul Kolom Rata Tengah
             h1, h2, h3 = st.columns([2, 1, 1])
-            h1.write("**Nama Sekolah**")
-            h2.write("**Guru Kurang**")
-            h3.write("**Guru Lebih**")
+            h1.markdown("<p style='text-align: left; font-weight: bold;'>Nama Sekolah</p>", unsafe_allow_html=True)
+            h2.markdown("<p class='center-text'>Guru Kurang</p>", unsafe_allow_html=True)
+            h3.markdown("<p class='center-text'>Guru Lebih</p>", unsafe_allow_html=True)
             st.write("---")
 
-            # Baris per Sekolah
-            for _, row in sch_summary.iterrows():
+            # Baris per Sekolah (Jarak Dirapatkan)
+            for i, row in sch_summary.iterrows():
                 c1, c2, c3 = st.columns([2, 1, 1])
-                if c1.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
-                    st.session_state.sel_sch = row['Nama Sekolah']
-                    st.session_state.sub_view = 'DETAIL'
-                    st.rerun()
-                c2.write(f"🔴 {int(row['Kurang'])}")
-                c3.write(f"🔵 {int(row['Lebih'])}")
-               
-        elif st.session_state.sub_view == 'DETAIL':
-            st.header(f"🔍 Detail: {st.session_state.sel_sch}")
-            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
-            df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
-            df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
-            html = "<table class='custom-table'><tr><th>Jabatan</th><th>Kebutuhan</th><th>Jumlah Guru</th><th>Selisih</th></tr>"
-            for _, row in df_res.iterrows():
-                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
-                html += f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td>{int(row['Selisih'])}</td></tr>"
-            st.markdown(html + "</table>", unsafe_allow_html=True)
-
+                # Kolom 1: Nama Sekolah
+                with c1:
+                    if st.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
+                        st.session_state.sel_sch = row['Nama Sekolah']
+                        st.session_state.sub_view = 'DETAIL'
+                        st.rerun()
+                # Kolom 2: Angka Kurang (Rata Tengah)
+                with c2:
+                    st.markdown(f"<p class='center-text' style='color: red;'>🔴 {int(row['Kurang'])}</p>", unsafe_allow_html=True)
+                # Kolom 3: Angka Lebih (Rata Tengah)
+                with c3:
+                    st.markdown(f"<p class='center-text' style='color: blue;'>🔵 {int(row['Lebih'])}</p>", unsafe_allow_html=True)
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
         search_all = st.text_input("🔍 Cari data...")
@@ -212,6 +215,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
