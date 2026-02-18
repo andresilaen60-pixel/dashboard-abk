@@ -127,23 +127,28 @@ if df is not None:
             
             search_s = st.text_input("🔍 Cari Sekolah...")
             
-            # Hitung Ringkasan
-            df_kab = df[df['Kabupaten'] == st.session_state.sel_kab]
+            # --- LOGIKA SINKRONISASI (Menghitung Selisih Real) ---
+            df_kab = df[df['Kabupaten'] == st.session_state.sel_kab].copy()
+            
+            # Kita buat kolom selisih baru agar hitungannya jujur
+            df_kab['Selisih_Real'] = df_kab['Jml Guru'] - df_kab['ABK']
+            
             sch_summary = df_kab.groupby('Nama Sekolah').apply(
                 lambda x: pd.Series({
-                    'Kurang': x['Kurang Guru'].sum(),
-                    'Lebih': x.apply(lambda r: max(0, r['Jml Guru'] - r['ABK']), axis=1).sum()
+                    # Menjumlahkan hanya yang hasilnya negatif (Kurang)
+                    'Kurang': abs(x[x['Selisih_Real'] < 0]['Selisih_Real'].sum()),
+                    # Menjumlahkan hanya yang hasilnya positif (Lebih)
+                    'Lebih': x[x['Selisih_Real'] > 0]['Selisih_Real'].sum()
                 })
             ).reset_index()
 
             if search_s:
                 sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
 
-            # CSS Merapatkan Baris & Rata Tengah
+            # CSS Merapatkan & Tengah
             st.markdown("""<style>.center-text { text-align: center; font-weight: bold; margin-bottom: 0px; } 
                         .stButton button { margin-bottom: -15px !important; }</style>""", unsafe_allow_html=True)
 
-            # Header Rata Tengah
             h1, h2, h3 = st.columns([2, 1, 1])
             h1.markdown("**Nama Sekolah**")
             h2.markdown("<p class='center-text'>Guru Kurang</p>", unsafe_allow_html=True)
@@ -226,6 +231,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
