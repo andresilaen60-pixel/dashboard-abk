@@ -174,7 +174,7 @@ if df is not None:
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
             
-            # Saklar tampilan: Balik ke daftar jabatan atau ke daftar sekolah
+            # 1. Tombol Kembali
             if st.button("⬅ Kembali"):
                 if st.session_state.get('view_personil', False):
                     st.session_state.view_personil = False
@@ -182,47 +182,71 @@ if df is not None:
                     st.session_state.sub_view = 'LIST_SEKOLAH'
                 st.rerun()
 
+            st.write("---")
+
             if not st.session_state.get('view_personil', False):
+                # CSS khusus untuk membuat tombol angka terlihat seperti link
+                st.markdown("""
+                    <style>
+                    div.stButton > button[key^="btn_p_"] {
+                        background-color: transparent !important;
+                        color: #007bff !important;
+                        border: none !important;
+                        text-decoration: underline !important;
+                        padding: 0 !important;
+                        font-size: 16px !important;
+                        height: auto !important;
+                        width: auto !important;
+                        display: inline-block !important;
+                    }
+                    div.stButton > button[key^="btn_p_"]:hover {
+                        color: #0056b3 !important;
+                        background-color: transparent !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
+
                 df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
                 df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
                 
-                st.write("---")
+                # Header Tabel Manual agar rapi
                 h1, h2, h3, h4 = st.columns([2, 1, 1, 1])
-                h1.write("**Jabatan**")
-                h2.write("**ABK**")
-                h3.write("**Jml Guru (Klik)**")
-                h4.write("**Selisih**")
+                h1.markdown("**Jabatan**")
+                h2.markdown("**Kebutuhan**")
+                h3.markdown("**Jml Guru**")
+                h4.markdown("**Selisih**")
                 st.write("---")
 
-                for _, row in df_res.iterrows():
+                for i, row in df_res.iterrows():
                     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
                     c1.write(row['Jabatan'])
-                    c2.write(int(row['ABK']))
+                    c2.write(f"{int(row['ABK'])}")
+                    
                     with c3:
                         if row['Jml Guru'] > 0:
-                            # Angka jumlah guru menjadi tombol untuk "drill-down" ke personil
-                            if st.button(f"{int(row['Jml Guru'])}", key=f"btn_p_{row['Jabatan']}"):
+                            # Tombol dengan Key unik agar bisa dimanipulasi CSS
+                            if st.button(f"{int(row['Jml Guru'])}", key=f"btn_p_{i}_{row['Jabatan']}"):
                                 st.session_state.sel_jabatan = row['Jabatan']
                                 st.session_state.view_personil = True
                                 st.rerun()
                         else:
                             st.write("0")
                     
+                    # Selisih dengan warna
                     s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
-                    color = "red" if row['Selisih'] < 0 else "blue" if row['Selisih'] > 0 else "black"
-                    c4.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_val}</span>", unsafe_allow_html=True)
-            
+                    color = "#d32f2f" if row['Selisih'] < 0 else "#1976d2" if row['Selisih'] > 0 else "#000"
+                    c4.markdown(f"<p style='color:{color}; font-weight:bold; margin:0;'>{s_val}</p>", unsafe_allow_html=True)
+                    st.write("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True) # Merapatkan baris
+
             else:
                 # --- TAMPILAN DATA PERSONIL (SHEET 3) ---
-                st.subheader(f"👥 Personil: {st.session_state.sel_jabatan}")
-                
-                # Filter data dari df_guru berdasarkan NPSN/Sekolah dan Jabatan
+                st.subheader(f"👥 Daftar Guru: {st.session_state.sel_jabatan}")
                 detail_p = df_guru[(df_guru['Nama Sekolah'] == st.session_state.sel_sch) & 
                                    (df_guru['Jabatan'] == st.session_state.sel_jabatan)]
                 
                 if not detail_p.empty:
-                    # Menampilkan Nama, NIP, NIK yang ada di Sheet 3
-                    st.table(detail_p[['Nama', 'NIP', 'NIK']])
+                    # Menghapus index agar terlihat bersih
+                    st.table(detail_p[['Nama', 'NIP', 'NIK']].reset_index(drop=True))
                 else:
                     st.warning("Data personil rinci belum diisi di Sheet 'Data Guru'.")
 
@@ -253,4 +277,5 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
 
