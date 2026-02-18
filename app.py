@@ -114,12 +114,40 @@ if df is not None:
 
         elif st.session_state.sub_view == 'LIST_SEKOLAH':
             st.header(f"🏫 Sekolah di {st.session_state.sel_kab}")
-            if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_KAB'; st.rerun()
+            if st.button("⬅ Kembali"): 
+                st.session_state.sub_view = 'LIST_KAB'
+                st.rerun()
+            
+            search_s = st.text_input("🔍 Cari Sekolah...")
+            
+            # Mengambil data sekolah dan menghitung ringkasan Kurang/Lebih
             df_kab = df[df['Kabupaten'] == st.session_state.sel_kab]
-            sch_list = df_kab['Nama Sekolah'].unique()
-            for s in sch_list:
-                if st.button(s, key=f"sk_{s}"):
-                    st.session_state.sel_sch = s; st.session_state.sub_view = 'DETAIL'; st.rerun()
+            sch_summary = df_kab.groupby('Nama Sekolah').apply(
+                lambda x: pd.Series({
+                    'Kurang': x['Kurang Guru'].sum(),
+                    'Lebih': x.apply(lambda r: max(0, r['Jml Guru'] - r['ABK']), axis=1).sum()
+                })
+            ).reset_index()
+
+            if search_s:
+                sch_summary = sch_summary[sch_summary['Nama Sekolah'].str.contains(search_s, case=False)]
+
+            # Header Judul Kolom
+            h1, h2, h3 = st.columns([2, 1, 1])
+            h1.write("**Nama Sekolah**")
+            h2.write("**Guru Kurang**")
+            h3.write("**Guru Lebih**")
+            st.write("---")
+
+            # Baris per Sekolah
+            for _, row in sch_summary.iterrows():
+                c1, c2, c3 = st.columns([2, 1, 1])
+                if c1.button(row['Nama Sekolah'], key=f"sk_{row['Nama Sekolah']}"):
+                    st.session_state.sel_sch = row['Nama Sekolah']
+                    st.session_state.sub_view = 'DETAIL'
+                    st.rerun()
+                c2.write(f"🔴 {int(row['Kurang'])}")
+                c3.write(f"🔵 {int(row['Lebih'])}")
                
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
@@ -184,6 +212,7 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
 
