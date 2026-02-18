@@ -120,9 +120,7 @@ if df is not None:
             for s in sch_list:
                 if st.button(s, key=f"sk_{s}"):
                     st.session_state.sel_sch = s; st.session_state.sub_view = 'DETAIL'; st.rerun()
-                c2.write(int(df_k['Jml Guru'].sum()))
-                c3.write(int(df_k[df_k['Jabatan'].str.contains('Kepala Sekolah', case=False)]['Jml Guru'].sum()))
-
+               
         elif st.session_state.sub_view == 'DETAIL':
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
             if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
@@ -186,5 +184,6 @@ if df is not None:
                     with st.expander(f"📖 {row['Jabatan']}"):
                         st.write(f"Guru: {int(row['Jml Guru'])} | ABK: {int(row['ABK'])}")
                         
+
 
 
