@@ -138,15 +138,49 @@ if df is not None:
             st.header(f"🔍 Detail: {st.session_state.sel_sch}")
             if st.button("⬅ Kembali"): st.session_state.sub_view = 'LIST_SEKOLAH'; st.rerun()
             
+            st.write("---")
+            
+            # --- HEADER TABEL ---
+            # Menggunakan columns agar posisi teks pasti sejajar
+            h1, h2, h3, h4 = st.columns([2.5, 1, 1, 1])
+            h1.markdown("**Jabatan**")
+            h2.markdown("**ABK**")
+            h3.markdown("**Jml Guru**")
+            h4.markdown("**Selisih**")
+            st.markdown("<hr style='margin: 0px 0px 10px 0px; border-top: 2px solid #012d5e;'>", unsafe_allow_html=True)
+
             df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
             df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
             
-            st.markdown("<table class='custom-table'><tr><th>Jabatan</th><th>ABK</th><th>Jml Guru</th><th>Selisih</th></tr>", unsafe_allow_html=True)
+            # --- ISI DATA ---
             for _, row in df_res.iterrows():
-                s_val = f"+{int(row['Selisih'])}" if row['Selisih'] > 0 else str(int(row['Selisih']))
-                cls = "bg-kurang" if row['Selisih'] < 0 else "bg-lebih" if row['Selisih'] > 0 else ""
-                st.markdown(f"<tr class='{cls}'><td>{row['Jabatan']}</td><td>{int(row['ABK'])}</td><td>{int(row['Jml Guru'])}</td><td><b>{s_val}</b></td></tr>", unsafe_allow_html=True)
-            st.markdown("</table>", unsafe_allow_html=True)
+                c1, c2, c3, c4 = st.columns([2.5, 1, 1, 1])
+                
+                # Nama Jabatan
+                c1.write(row['Jabatan'])
+                
+                # Angka Kebutuhan (ABK)
+                c2.write(str(int(row['ABK'])))
+                
+                # Jumlah Guru Saat Ini
+                c3.write(str(int(row['Jml Guru'])))
+                
+                # Selisih dengan Warna
+                selisih = int(row['Selisih'])
+                s_val = f"+{selisih}" if selisih > 0 else str(selisih)
+                
+                # Logika Warna: Merah untuk Kurang (-), Biru untuk Lebih (+), Hijau untuk Pas (0)
+                if selisih < 0:
+                    color = "#FF0000"  # Merah
+                elif selisih > 0:
+                    color = "#0000FF"  # Biru
+                else:
+                    color = "#28a745"  # Hijau
+                
+                c4.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_val}</span>", unsafe_allow_html=True)
+                
+                # Garis pemisah tipis antar baris
+                st.markdown("<hr style='margin: 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
 
     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
@@ -161,3 +195,4 @@ if df is not None:
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
