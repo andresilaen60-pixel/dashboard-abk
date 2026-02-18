@@ -71,8 +71,9 @@ def login():
     with col2:
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=100)
         st.header("🔑 Login E-ABK Sumut")
-        u = st.text_input("Username")
-        p = st.text_input("Password", type="password")
+        # Gunakan key agar input tidak hilang saat loading
+        u = st.text_input("Username", key="input_user")
+        p = st.text_input("Password", type="password", key="input_pass")
         if st.button("Masuk Sekarang", use_container_width=True):
             if u == "admin" and p == "sumut2026":
                 st.session_state.logged_in = True
@@ -80,36 +81,20 @@ def login():
             else:
                 st.error("Username atau Password salah!")
 
+# --- LOGIKA TAMPILAN (CEGAT USER) ---
 if not st.session_state.logged_in:
     login()
     st.stop()
 
-# --- 5. SETUP DASHBOARD (JALAN JIKA SUDAH LOGIN) ---
+# --- 5. SETUP DASHBOARD (HANYA JALAN JIKA SUDAH LOGIN) ---
+# Kita masukkan loading data ke sini agar tidak bentrok dengan login
 df, df_guru = load_and_fix_data()
+
 if 'sub_view' not in st.session_state: st.session_state.sub_view = 'LIST_KAB'
 if 'menu_aktif' not in st.session_state: st.session_state.menu_aktif = "Data Provinsi"
-
-with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Coat_of_arms_of_North_Sumatra.svg/1200px-Coat_of_arms_of_North_Sumatra.svg.png", width=80)
-    st.title("E-ABK SUMUT")
-    st.write("---")
-    
-    def nav(m):
-        st.session_state.menu_aktif = m
-        st.session_state.sub_view = 'LIST_KAB'
-        st.rerun()
-
-    if st.button("🏢 Data Provinsi", use_container_width=True): nav("Data Provinsi")
-    if st.button("📍 Data Kabupaten Kota", use_container_width=True): nav("Data Kabupaten Kota")
-    if st.button("🌐 Data Keseluruhan", use_container_width=True): nav("Data Keseluruhan")
-    if st.button("🗺️ Peta Maps Sumut", use_container_width=True): nav("Peta Maps Sumut")
-    
-    st.write("---")
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
-
-menu_pilihan = st.session_state.menu_aktif
+# Pastikan variabel personil dan npsn juga diinisialisasi
+if 'view_personil' not in st.session_state: st.session_state.view_personil = False
+if 'sel_npsn' not in st.session_state: st.session_state.sel_npsn = None
 
 # --- 6. LOGIKA MENU ---
 if df is not None:
@@ -296,6 +281,7 @@ if df is not None:
                 v = int(df_k.apply(lambda r: max(0, r['Jml Guru']-r['ABK']), axis=1).sum())
                 if v > 0: folium.CircleMarker(loc, radius=12, color='blue', fill=True, popup=f"{kab}: {v} Lebih").addTo(m)
         st_folium(m, width=None, height=450)
+
 
 
 
