@@ -197,7 +197,7 @@ if df is not None:
             df_res['Selisih'] = df_res['Jml Guru'] - df_res['ABK']
             
             for _, row in df_res.iterrows():
-                c1, c2, c3, c4, c5 = st.columns([2.5, 1, 1, 1, 1])
+                c1, c2, c3, c4, = st.columns([2.5, 1, 1, 1])
                 c1.write(row['Jabatan'])
                 c2.write(str(int(row['ABK'])))
                 c3.write(str(int(row['Jml Guru'])))
@@ -220,6 +220,7 @@ if df is not None:
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
 
 
 
