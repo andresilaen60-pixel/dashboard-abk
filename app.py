@@ -212,14 +212,15 @@ if df is not None:
             search_all = st.text_input("🔍 Cari data...")
             df_all = df[['Kabupaten', 'Nama Sekolah', 'Jabatan', 'Jml Guru', 'Kurang Guru', 'Keterangan']].copy()
             if search_all:
-            mask = df_all.apply(lambda x: x.astype(str).str.contains(search_all, case=False)).any(axis=1)
-            df_all = df_all[mask]
-            st.dataframe(df_all, use_container_width=True, hide_index=True)
+                mask = df_all.apply(lambda x: x.astype(str).str.contains(search_all, case=False)).any(axis=1)
+                df_all = df_all[mask]
+                st.dataframe(df_all, use_container_width=True, hide_index=True)
 
     elif menu_pilihan == "Peta Maps Sumut":
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
 
 
 
