@@ -186,12 +186,11 @@ if df is not None:
             
             st.write("---")
             # Header kolom yang lurus
-            h1, h2, h3, h4, h5 = st.columns([2.5, 1, 1, 1, 1])
+            h1, h2, h3, h4, = st.columns([2.5, 1, 1, 1])
             h1.markdown("**Jabatan**")
             h2.markdown("**Kebutuhan Guru**")
             h3.markdown("**Jumlah Guru**")
             h4.markdown("**Selisih**")
-            h5.markdown("**Keterangan**")
             st.markdown("<hr style='margin: 10px 0px; border-top: 2px solid #012d5e;'>", unsafe_allow_html=True)
 
             df_res = df[df['Nama Sekolah'] == st.session_state.sel_sch].copy()
@@ -209,13 +208,7 @@ if df is not None:
                 c4.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_txt}</span>", unsafe_allow_html=True)
                 st.markdown("<hr style='margin: 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
 
-                keterangan = int(row['Keterangan'])
-                s_txt = f"+{selisih}" if selisih > 0 else str(selisih)
-                color = "red" if selisih < 0 else "blue" if selisih > 0 else "green"
-                c5.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_txt}</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
-
-    elif menu_pilihan == "Data Keseluruhan":
+     elif menu_pilihan == "Data Keseluruhan":
         st.header("🌐 Seluruh Data Pemetaan")
         search_all = st.text_input("🔍 Cari data...")
         df_all = df[['Kabupaten', 'Nama Sekolah', 'Jabatan', 'Jml Guru', 'Kurang Guru', 'Keterangan']].copy()
@@ -228,6 +221,7 @@ if df is not None:
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
 
 
 
