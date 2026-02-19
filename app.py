@@ -222,3 +222,4 @@ if df is not None:
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
 
+
