@@ -207,6 +207,7 @@ if df is not None:
                 color = "red" if selisih < 0 else "blue" if selisih > 0 else "green"
                 c4.markdown(f"<span style='color:{color}; font-weight:bold;'>{s_txt}</span>", unsafe_allow_html=True)
                 st.markdown("<hr style='margin: 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
+                
         elif menu_pilihan == "Data Keseluruhan":
             st.header("🌐 Seluruh Data Pemetaan")
             search_all = st.text_input("🔍 Cari data...")
@@ -220,6 +221,7 @@ if df is not None:
         st.header("🗺️ Sebaran Geografis Guru")
         m = folium.Map(location=[2.1121, 99.1962], zoom_start=8, tiles="CartoDB positron")
         st_folium(m, width=None, height=450)
+
 
 
 
